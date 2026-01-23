@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 const sendEmail = require("./utils/SendEmail");
 
-const User = require("./models/user");
+const User = require("./models/User");
 
 const app = express();
 
