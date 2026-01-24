@@ -21,7 +21,7 @@ console.log("SERVER FILE LOADED");
 
 // MongoDB 
 mongoose
-  .connect("process.env.MONGO_URL")
+  .connect(`${process.env.MONGO_URL}`)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error(err));
 
@@ -237,35 +237,29 @@ app.post("/verify-otp", async (req, res) => {
     otpExpiry: { $gt: Date.now() },
   });
 
-  if (!user) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
-
-    console.log("Invalid or expired OTP");
-  } console.log("OTP valid");
+  user.isOtpVerified = true;
+  await user.save();
 
   res.json({ message: "OTP verified" });
-  console.log("OTP verified")
+  console.log("OTP verified");
 });
 //reset 
 app.post("/reset-password", async (req, res) => {
   console.log("RESET PASSWORD ROUTE hit");
-  const { email, otp, newPassword } = req.body;
+  const { email, newPassword } = req.body;
+
+const user = await User.findOne({ email });
+
+if (!user || !user.isOtpVerified) {
+  return res.status(400).json({ message: "OTP not verified" });
+}
 
 
-  const user = await User.findOne({
-    email,
-    otp,
-    otpExpiry: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    return res.status(400).json({ message: "Invalid or expired OTP" });
-    console.log("Invalid or expired OTP");
-  } console.log("OTP valid");
 
   user.password = await bcrypt.hash(newPassword, 10);
-  user.otp = undefined;
-  user.otpExpiry = undefined;
+  user.isOtpVerified=false
+  user.otp = null;
+  user.otpExpiry = null;
   await user.save();
 
   res.json({ message: "Password reset successful" });
