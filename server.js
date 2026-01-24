@@ -230,18 +230,25 @@ app.post("/forgot-password", async (req, res) => {
 app.post("/verify-otp", async (req, res) => {
   console.log("VERIFY OTP ROUTE hit");
   const { email, otp } = req.body;
+try {
+    const user = await User.findOne({
+      email,
+      otp,
+      otpExpiry: { $gt: Date.now() },
+    });
 
-  const user = await User.findOne({
-    email,
-    otp,
-    otpExpiry: { $gt: Date.now() },
-  });
-
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
   user.isOtpVerified = true;
   await user.save();
 
   res.json({ message: "OTP verified" });
   console.log("OTP verified");
+}catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error verifying OTP" });
+  }
 });
 //reset 
 app.post("/reset-password", async (req, res) => {
