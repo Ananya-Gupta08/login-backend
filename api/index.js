@@ -19,7 +19,12 @@ app.get("/", (req, res) => {
 });
 
 // GOOGLE AUTH ROUTES
-app.get("/auth/google", ...);
-app.get("/auth/google/callback", ...);
+app.get("/auth/google", (req, res) => {
+  res.send("Google auth route works");
+});
+
+app.get("/auth/google/callback", (req, res) => {
+  res.send("Google callback works ");
+});
 
 export default app;
