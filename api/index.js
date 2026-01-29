@@ -5,7 +5,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-export default function handler(req, res) {
+
+function handler(req, res) {
   const { url } = req;
 
   if (url === "/auth/google") {
