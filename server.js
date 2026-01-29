@@ -341,7 +341,7 @@ app.get("/auth/google/callback", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 // serverstart
 // app.listen(PORT, () => {
 //   console.log("SERVER STARTED");
