@@ -50,7 +50,7 @@ passport.use(new GoogleStrategy(
 
 // ROUTES
 app.get("/", (req, res) => {
-  res.send("Backend running on Vercel 🚀");
+  res.send("Backend running on Vercel");
 });
 
 // STEP 1: Redirect to Google
