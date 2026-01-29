@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -20,5 +20,9 @@
     "mongodb": "^6.21.0",
     "mongoose": "^8.21.0",
     "resend": "^6.8.0"
-  }
+  },
+  
+  "type": "module"
+
+  
 }
