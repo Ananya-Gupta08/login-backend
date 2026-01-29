@@ -5,15 +5,18 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+export default function handler(req, res) {
+  const { url } = req;
 
-// ✅ ROOT ROUTE (VERY IMPORTANT)
-app.get("/", (req, res) => {
-  res.send("Backend is running on Vercel ✅");
-});
+  if (url === "/auth/google") {
+    return res.status(200).send("✅ /auth/google route is working");
+  }
 
-// ✅ TEST ROUTE
-app.get("/auth/google", (req, res) => {
-  res.send("NOW THIS IS api/index.js 🔥");
-});
+  if (url === "/auth/google/callback") {
+    return res.status(200).send("✅ Google callback route working");
+  }
+
+  return res.status(200).send("🏠 Backend root working");
+}
 
 export default app;
