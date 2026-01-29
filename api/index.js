@@ -53,19 +53,21 @@ app.get("/", (req, res) => {
   res.send("Backend running on Vercel");
 });
 
-// STEP 1: Redirect to Google
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// // STEP 1: Redirect to Google
+// app.get(
+//   "/auth/google",
+//   passport.authenticate("google", { scope: ["profile", "email"] })
+// );
 
-// STEP 2: Google callback
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: process.env.FRONTEND_URL + "/login" }),
-  (req, res) => {
-    res.redirect(`${process.env.FRONTEND_URL}/google-success`);
-  }
-);
-
+// // STEP 2: Google callback
+// app.get(
+//   "/auth/google/callback",
+//   passport.authenticate("google", { failureRedirect: process.env.FRONTEND_URL + "/login" }),
+//   (req, res) => {
+//     res.redirect(`${process.env.FRONTEND_URL}/google-success`);
+//   }
+// );
+app.get("/auth/google", (req, res) => {
+  res.send("🔥 THIS IS THE REAL FILE 🔥");
+});
 export default app;
