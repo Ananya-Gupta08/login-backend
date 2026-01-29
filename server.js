@@ -343,9 +343,9 @@ app.get("/auth/google/callback", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 // serverstart
-app.listen(PORT, () => {
-  console.log("SERVER STARTED");
-  console.log("Server is listening on port", PORT);
-});
+// app.listen(PORT, () => {
+//   console.log("SERVER STARTED");
+//   console.log("Server is listening on port", PORT);
+// });
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "LOADED" : "MISSING");
