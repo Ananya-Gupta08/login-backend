@@ -11,9 +11,15 @@ const userSchema = new mongoose.Schema({
     unique: true,  
     },
   password: {
-    type: String,
-    required: true,
+  type: String,
+  required: function () {
+    return this.authProvider !== "google";
   },
+},
+authProvider: {
+  type: String,
+  default: "local",
+},
    isOtpVerified: {
     type: Boolean,
     default: false

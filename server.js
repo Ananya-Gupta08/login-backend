@@ -9,8 +9,14 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const sendEmail = require("./utils/SendEmail");
 
 const User = require("./models/User");
+const { OAuth2Client } = require("google-auth-library");
 
 const app = express();
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  // "http://localhost:5000/auth/google/callback"
+);
 
 // middleware
 app.use(cors());
@@ -118,7 +124,11 @@ app.post("/login", async (req, res) => {
     console.log("User found");
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password matched");
+    // console.log("Password matched");
+    if(isMatch) {
+       console.log("Password matched");
+      
+    }
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
       console.log("Invalid password");
@@ -201,7 +211,7 @@ app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
 
-  // Always respond the same (prevents email enumeration)
+
   const user = await User.findOne({ email });
   if (!user) {
     return res.json({ message: "If email exists, OTP sent" });
@@ -271,6 +281,64 @@ if (!user || !user.isOtpVerified) {
 
   res.json({ message: "Password reset successful" });
   console.log("Password reset successful")
+});
+//google auth login route
+app.get("/auth/google", (req, res) => {
+  console.log("GOOGLE AUTH ROUTE HIT");
+  const url = googleClient.generateAuthUrl({
+    access_type: "offline",
+    scope: ["profile", "email"],
+    redirect_uri: process.env.GOOGLE_REDIRECT_URL,
+  });
+  res.redirect(url);
+});
+//google auth callback
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+
+   const { tokens } = await googleClient.getToken({
+  code,
+  redirect_uri: process.env.GOOGLE_REDIRECT_URL,
+});
+    googleClient.setCredentials(tokens);
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const { email, name } = ticket.getPayload();
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        password: "",        
+        authProvider: "google",
+      });
+    }
+
+    const jwtToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // redirect back to frontend
+    res.redirect(
+      `${process.env.FRONTEND_URL}/google-success?token=${jwtToken}`
+        
+      
+    );
+  console.log("GOOGLE redirected to PROFILE ROUTE HIT");
+
+  } catch (err) {
+    console.error(err);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
+  }
 });
 
 const PORT = process.env.PORT || 5000;
