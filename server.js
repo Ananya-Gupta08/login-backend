@@ -12,6 +12,7 @@ const User = require("./models/User");
 const { OAuth2Client } = require("google-auth-library");
 
 const app = express();
+const router = express.Router();
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -283,7 +284,7 @@ if (!user || !user.isOtpVerified) {
   console.log("Password reset successful")
 });
 //google auth login route
-app.get("/auth/google", (req, res) => {
+router.get("/auth/google", (req, res) => {
   console.log("GOOGLE AUTH ROUTE HIT");
   const url = googleClient.generateAuthUrl({
     access_type: "offline",
@@ -293,7 +294,7 @@ app.get("/auth/google", (req, res) => {
   res.redirect(url);
 });
 //google auth callback
-app.get("/auth/google/callback", async (req, res) => {
+router.get("/auth/google/callback", async (req, res) => {
   try {
     const { code } = req.query;
 
