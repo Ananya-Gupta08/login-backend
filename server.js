@@ -1,6 +1,6 @@
-require("dotenv").config();
+// require("dotenv").config();
 
-const express = require("express");
+// const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
@@ -9,10 +9,18 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const sendEmail = require("./utils/SendEmail");
 
 const User = require("./models/User");
-const { OAuth2Client } = require("google-auth-library");
+// const { OAuth2Client } = require("google-auth-library");
+import express from "express";
+import { OAuth2Client } from "google-auth-library";
+import dotenv from "dotenv";
 
-const app = express();
+dotenv.config();
+
 const router = express.Router();
+
+export default router;
+const app = express();
+// const router = express.Router();
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
