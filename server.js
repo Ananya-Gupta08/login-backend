@@ -1,316 +1,100 @@
-// require("dotenv").config();
-
-// const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
-const sendEmail = require("./utils/SendEmail");
-
-const User = require("./models/User");
-// const { OAuth2Client } = require("google-auth-library");
 import express from "express";
-import { OAuth2Client } from "google-auth-library";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+
+import User from "./models/User.js";
+import sendEmail from "./utils/SendEmail.js";
 
 dotenv.config();
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET;
 
-export default router;
-const app = express();
-// const router = express.Router();
-const googleClient = new OAuth2Client(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  // "http://localhost:5000/auth/google/callback"
-);
+// MongoDB (safe for Vercel)
+if (!mongoose.connection.readyState) {
+  mongoose
+    .connect(process.env.MONGO_URL)
+    .then(() => console.log("MongoDB connected"))
+    .catch(console.error);
+}
 
 // middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+router.use(cors());
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
 
-console.log("SERVER FILE LOADED");
-
-// MongoDB 
-mongoose
-  .connect(`${process.env.MONGO_URL}`)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error(err));
-
-// root route
-app.get("/", (req, res) => {
-  console.log("ROOT ROUTE hit");
-  res.send({ status: "Server is running" });
-});
+// ================= AUTH MIDDLEWARE =================
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return res.status(401).json({ message: "No token provided" });
-    console.log("No token provided");
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId; 
+    req.userId = decoded.userId;
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
-    console.log("Invalid or expired token");
+  } catch {
+    res.status(401).json({ message: "Invalid or expired token" });
   }
-  console.log("AUTH MIDDLEWARE LOADED");
 };
 
-// SIGNUP ROUTE
-app.post("/signup", async (req, res) => {
-  console.log("SIGNUP ROUTE hit");
+// ================= NORMAL AUTH =================
+router.post("/signup", async (req, res) => {
   const { name, email, password, confirmPassword } = req.body;
 
-  if (!name || !email || !password || !confirmPassword) {
-    return res.status(400).json({ message: "All fields are required" });
-    console.log("All fields are required");
+  if (!name || !email || !password || password !== confirmPassword) {
+    return res.status(400).json({ message: "Invalid input" });
   }
 
-  if (password !== confirmPassword) {
-    return res.status(400).json({ message: "Passwords do not match" });
-    console.log("Passwords do not match");
+  if (await User.findOne({ email })) {
+    return res.status(400).json({ message: "Email already exists" });
   }
 
-  try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
-      console.log("Email already registered");
-    }
+  const hashed = await bcrypt.hash(password, 10);
+  const user = await User.create({ name, email, password: hashed });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Password hashed");
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
-    console.log("User created");
-
-    res.status(201).json({
-      message: "Signup successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-      
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-  console.log("Signup successful")
+  res.status(201).json({ message: "Signup successful", user });
 });
 
-// LOGIN ROUTE 
-app.post("/login", async (req, res) => {
-  console.log("LOGIN ROUTE hit");
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password required" });
-    console.log("Email and password required");
-  }
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-      console.log("User not found");
-    }
-    console.log("User found");
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    // console.log("Password matched");
-    if(isMatch) {
-       console.log("Password matched");
-      
-    }
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid password" });
-      console.log("Invalid password");
-    }
-
-    // jwt
-    const token = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-    console.log("Login successful");
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-    console.log("Server error in login route");
-
-  }
-  console.log("LOGIN ROUTE hit");
-});
-
-app.post("/change-password", authMiddleware, async (req, res) => {
-  console.log("CHANGE PASSWORD ROUTE hit");
-  const { oldPassword, newPassword } = req.body;
-
-  // validation
-  if (!oldPassword || !newPassword) {
-    return res.status(400).json({ message: "All fields required" });
-    console.log("All fields required");
-  }
-
-  const user = await User.findById(req.userId);
-
-  // check old password
-  const isMatch = await bcrypt.compare(oldPassword, user.password);
-
-  if (!isMatch) {
-    return res.status(400).json({ message: "Old password incorrect" });
-    console.log("Old password incorrect");
-  } console.log("Old password correct");
-
-  // hash new password
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  console.log(" new Password hashed");
-
-  user.password = hashedPassword;
-  await user.save();
-
-  res.json({ message: "Password changed successfully" });
-  console.log("Password changed successfully");
-});
-
-app.get("/profile", authMiddleware, async (req, res) => {
-  console.log("PROFILE ROUTE hit");
-  try {
-    const user = await User.findById(req.userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-      console.log("User not found");
-    }
-    res.json(user);
-    console.log("User found");
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-    console.log("Server error in profile route");
-    
-  }
-});
-app.post("/forgot-password", async (req, res) => {
-  console.log("FORGOT PASSWORD ROUTE hit");
-  const { email } = req.body;
-
-
-
   const user = await User.findOne({ email });
-  if (!user) {
-    return res.json({ message: "If email exists, OTP sent" });
-    console.log("If email exists, OTP sent");
-  } console.log("Email exists");
-//otp generator 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
-  user.otp = otp;
-  user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
-  console.log("OTP generated");
-  await user.save();
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
 
- 
- await sendEmail(
-  email,
-  "Password Reset OTP",
-  `Your OTP is ${otp}. It is valid for 5 minutes.`,
-    console.log("Email sent")
+  const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: "1h" });
+  res.json({ token, user });
+});
+
+// ================= GOOGLE AUTH =================
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
 );
 
-
-  res.json({ message: "OTP sent" });
-  console.log("OTP sent");
-});
-//verification
-app.post("/verify-otp", async (req, res) => {
-  console.log("VERIFY OTP ROUTE hit");
-  const { email, otp } = req.body;
-try {
-    const user = await User.findOne({
-      email,
-      otp,
-      otpExpiry: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-  user.isOtpVerified = true;
-  await user.save();
-
-  res.json({ message: "OTP verified" });
-  console.log("OTP verified");
-}catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error verifying OTP" });
-  }
-});
-//reset 
-app.post("/reset-password", async (req, res) => {
-  console.log("RESET PASSWORD ROUTE hit");
-  const { email, newPassword } = req.body;
-
-const user = await User.findOne({ email });
-
-if (!user || !user.isOtpVerified) {
-  return res.status(400).json({ message: "OTP not verified" });
-}
-
-
-
-  user.password = await bcrypt.hash(newPassword, 10);
-  user.isOtpVerified=false
-  user.otp = null;
-  user.otpExpiry = null;
-  await user.save();
-
-  res.json({ message: "Password reset successful" });
-  console.log("Password reset successful")
-});
-//google auth login route
 router.get("/auth/google", (req, res) => {
-  console.log("GOOGLE AUTH ROUTE HIT");
   const url = googleClient.generateAuthUrl({
-    access_type: "offline",
     scope: ["profile", "email"],
     redirect_uri: process.env.GOOGLE_REDIRECT_URL,
   });
   res.redirect(url);
 });
-//google auth callback
+
 router.get("/auth/google/callback", async (req, res) => {
   try {
-    const { code } = req.query;
-
-   const { tokens } = await googleClient.getToken({
-  code,
-  redirect_uri: process.env.GOOGLE_REDIRECT_URL,
-});
-    googleClient.setCredentials(tokens);
+    const { tokens } = await googleClient.getToken({
+      code: req.query.code,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URL,
+    });
 
     const ticket = await googleClient.verifyIdToken({
       idToken: tokens.id_token,
@@ -320,41 +104,21 @@ router.get("/auth/google/callback", async (req, res) => {
     const { email, name } = ticket.getPayload();
 
     let user = await User.findOne({ email });
-
     if (!user) {
-      user = await User.create({
-        name,
-        email,
-        password: "",        
-        authProvider: "google",
-      });
+      user = await User.create({ name, email, authProvider: "google" });
     }
 
-    const jwtToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
-    // redirect back to frontend
     res.redirect(
       `${process.env.FRONTEND_URL}/google-success?token=${jwtToken}`
-        
-      
     );
-  console.log("GOOGLE redirected to PROFILE ROUTE HIT");
-
   } catch (err) {
     console.error(err);
     res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
   }
 });
 
-// const PORT = process.env.PORT || 5000;
-// serverstart
-// app.listen(PORT, () => {
-//   console.log("SERVER STARTED");
-//   console.log("Server is listening on port", PORT);
-// });
-console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "LOADED" : "MISSING");
+export default router;
