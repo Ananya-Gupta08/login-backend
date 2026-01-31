@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 
 import User from "./models/User.js";
-import sendEmail from "./utils/SendEmail.js";
+// import sendEmail from "./utils/SendEmail.js";
 
 dotenv.config();
 
