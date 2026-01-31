@@ -1,5 +1,4 @@
-const { Resend } = require("resend");
-
+import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (to, subject, text) => {
@@ -13,4 +12,4 @@ const sendEmail = async (to, subject, text) => {
   console.log("RESEND RESULT:", result);
 };
 
-module.exports = sendEmail;
+export default sendEmail;
