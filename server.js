@@ -82,6 +82,7 @@ const googleClient = new OAuth2Client(
 );
 
 router.get("/auth/google", (req, res) => {
+  res.send("Google auth started");
   const url = googleClient.generateAuthUrl({
     scope: ["profile", "email"],
     redirect_uri: process.env.GOOGLE_REDIRECT_URL,
