@@ -2,21 +2,29 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "../server.js";
+
 dotenv.config();
 
 const app = express();
 
 // middlewares
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 
 app.use(express.json());
+
+// routes
 app.use(authRoutes);
+
 // health check
 app.get("/", (req, res) => {
-  res.send("Backend running on Vercel 🚀");
+  res.send("Backend running on Vercel");
 });
 
-export default app;
+export default function handler(req, res) {
+  app(req, res);
+}
