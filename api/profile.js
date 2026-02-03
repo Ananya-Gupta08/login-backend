@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     try {
         const token = authHeader.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        await connectDB();
         const user = await User.findById(decoded.userId).select("-password");
         res.json(user);
     } catch {
