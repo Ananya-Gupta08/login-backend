@@ -1,8 +1,7 @@
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+import User from "./models/User.js";
 import connectDB from "./_utils/connectDB.js";
-import User from "../models/User.js";
-
+import jwt from "jsonwebtoken";
 export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ message: "Method not allowed" });

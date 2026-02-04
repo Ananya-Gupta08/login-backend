@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../../models/User.js";
+import User from "../models/User.js";
 import connectDB from "../_utils/connectDB.js";
 import { OAuth2Client } from "google-auth-library";
 
