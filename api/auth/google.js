@@ -14,5 +14,11 @@
 //   res.redirect(url);
 // }
 export default function handler(req, res) {
-  res.status(200).send("Google route works");
-}
+          if (req.method === 'GET') {
+            // Handle Google authentication logic here
+            res.status(200).json({ message: 'Google Auth endpoint reached!' });
+          } else {
+            res.setHeader('Allow', ['GET']);
+            res.status(405).end(`Method ${req.method} Not Allowed`);
+          }
+  }
