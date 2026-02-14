@@ -26,6 +26,11 @@ authProvider: {
   },
   otp: String,
   otpExpiry: Date,
+  role: {
+  type: String,
+  enum: ["admin", "manager", "staff", "customer"],
+  default: "customer",
+},
 
 });
 export default mongoose.model('User', userSchema);

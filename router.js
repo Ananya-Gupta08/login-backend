@@ -5,8 +5,9 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-
-import User from "./models/User.js";
+import User from "./api/models/User.js";
+import connectDB from "./api/_utils/connectDB.js";
+import requireRole from "./api/_utils/requireRole.js";
 // import sendEmail from "./utils/SendEmail.js";
 
 dotenv.config();
@@ -120,5 +121,48 @@ router.get("/auth/google/callback", async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
   }
 });
+// ================= PROFILE =================
+router.get("/profile", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ================= ADMIN ROUTES =================
+router.post(
+  "/admin/create-user",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      await connectDB();
+
+      const { name, email, role } = req.body;
+
+      if (!["staff", "manager", "customer"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      const user = await User.create({
+        name,
+        email,
+        role,
+        accountStatus: "Active",
+      });
+
+      res.status(201).json(user);
+    } catch (err) {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 export default router;
