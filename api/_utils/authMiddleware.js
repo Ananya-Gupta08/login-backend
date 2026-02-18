@@ -16,4 +16,7 @@ export default function authMiddleware(req, res, next) {
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
+
+  console.log("HEADER:", req.headers.authorization);
+  console.log("SECRET:", process.env.JWT_SECRET);
 }
