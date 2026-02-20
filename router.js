@@ -187,5 +187,128 @@ router.post(
     }
   }
 );  
+// get total users data 
+router.get(
+  "/admin/dashboard",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const totalUsers = await User.countDocuments();
+      const totalStaff = await User.countDocuments({ role: "staff" });
+      const totalManagers = await User.countDocuments({ role: "manager" });
+      const totalCustomers = await User.countDocuments({ role: "customer" });
 
+      res.json({
+        totalUsers,
+        totalStaff,
+        totalManagers,
+        totalCustomers,
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+// get users list 
+router.get(
+  "/admin/users",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const users = await User.find().select("-password");
+
+      res.json(users);
+    } catch (err) {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+// edit users using -patch-
+router.patch(
+  "/admin/update-role/:id",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const { role } = req.body;
+
+      if (!["staff", "manager", "customer"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { role },
+        { new: true }
+      ).select("-password");
+      if (role !== undefined && !["staff","manager","customer"].includes(role)) {
+  return res.status(400).json({ message: "Invalid role" });
+}
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "Role updated", user });
+    } catch (err) {
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+// delete user using -delete-
+router.delete("/admin/delete-user/:id",authMiddleware,requireRole("admin"),
+async(req,res)=> {
+  try{
+    const user=await User.findByIdAndDelete(req.params.id);
+    if(!user){
+      return res.status(404).json({message:"User not found"});
+    }
+    res.json({message:"User deleted successfully"});
+  }catch(err){
+    res.status(500).json({message:"Server error"});
+  }
+})
+// staff apis
+// dashboard api
+
+router.get("/staff/dashboard",authMiddleware,requireRole("staff"),
+async(req,res)=>{
+  try{
+    res.json({
+      message:"Staff dashboard",
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }catch(err){
+    res.status(500).json({message:"Server error"});
+  }
+})
+//manager dashboard 
+router.get("/manager/dashobard",authMiddleware,requireRole("manager"),
+async(req,res)=>{
+  try{
+    res.json({
+      message:"Manager dashboard",
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }catch(err){
+    res.status(500).json({message:"Server error"});
+  }
+})
+//customer dashboard 
+router.get("/customer/dashboard",authMiddleware,requireRole("customer"),
+async(req,res)=>{
+  try{
+    res.json({
+      message:"Customer dashboard",
+      userId: req.user.userId,
+      role: req.user.role,
+    });
+  }catch(err){
+    res.status(500).json({message:"Server error"});
+  }
+})
 export default router;

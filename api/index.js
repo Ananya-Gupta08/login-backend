@@ -17,10 +17,7 @@ app.use(
 
 app.use(express.json());
 
-// routes
-// app.use(authRoutes);
 
-// health check
 app.get("/", (req, res) => {
   res.send("Backend running on Vercel");
 });
