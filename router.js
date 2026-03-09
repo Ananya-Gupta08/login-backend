@@ -311,4 +311,19 @@ async(req,res)=>{
     res.status(500).json({message:"Server error"});
   }
 })
+//user deactivation route 
+router.patch(
+  "/admin/deactivate/:id",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { accountStatus: "Deactivated" },
+      { new: true }
+    );
+
+    res.json(user);
+  }
+);
 export default router;

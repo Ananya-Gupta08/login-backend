@@ -14,9 +14,11 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    if (user.accountStatus !== "Active"){
-    return res.status(403).json({ message: "Account is inactive" });
-    }
+    if (user.accountStatus === "Deactivated") {
+  return res.status(403).json({
+    message: "Your account has been deactivated. Contact admin.",
+  });
+}
     
     if (user.authProvider === "google") {
     return res.status(400).json({ message: "Please login using Google" });

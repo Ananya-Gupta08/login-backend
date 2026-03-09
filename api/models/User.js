@@ -31,6 +31,12 @@ authProvider: {
   enum: ["admin", "manager", "staff", "customer"],
   default: "customer",
 },
+accountStatus: {
+  type: String,
+  enum: ["Active", "Deactivated"],
+  default: "Active",
+}
 
 });
+
 export default mongoose.model('User', userSchema);
