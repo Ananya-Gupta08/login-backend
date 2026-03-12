@@ -15,10 +15,13 @@ export default async function handler(req, res) {
     }
 
     if (user.accountStatus === "Deactivated") {
-  return res.status(403).json({
-    message: "Your account has been deactivated. Contact admin.",
-  });
-}
+
+        console.log("account is deactivated");
+        return res.status(403).json({
+            
+            message: "Your account has been deactivated. Contact admin.",
+        });
+    }
     
     if (user.authProvider === "google") {
     return res.status(400).json({ message: "Please login using Google" });
@@ -45,4 +48,5 @@ export default async function handler(req, res) {
         token,
         user: userResponse,
     });
+     console.log("STATUS:", res.status);
 }

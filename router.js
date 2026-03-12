@@ -68,7 +68,19 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
+  if (!user) {
+    return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  // block deactivated accounts
+  if (user.accountStatus === "Deactivated") {
+    console.log("account is deactivated (router login)");
+    return res.status(403).json({
+      message: "Your account has been deactivated. Contact admin.",
+    });
+  }
+
+  if (!(await bcrypt.compare(password, user.password))) {
     return res.status(400).json({ message: "Invalid credentials" });
   }
 
@@ -107,6 +119,12 @@ router.get("/auth/google/callback", async (req, res) => {
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({ name, email, authProvider: "google" });
+    }
+
+    // block deactivated accounts for Google auth as well
+    if (user.accountStatus === "Deactivated") {
+      console.log("google login attempt for deactivated account");
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=deactivated`);
     }
 
     const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, {
