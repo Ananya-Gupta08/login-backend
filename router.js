@@ -170,7 +170,7 @@ router.post(
         return res.status(400).json({ message: "Missing fields" });
       }
 
-      if (!["staff", "manager", "customer"].includes(role)) {
+      if (!["staff", "manager", "customer", "admin"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
 
@@ -252,7 +252,7 @@ router.patch(
     try {
       const { role } = req.body;
 
-      if (!["staff", "manager", "customer"].includes(role)) {
+      if (!["staff", "manager", "customer", "admin"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
 
@@ -261,7 +261,7 @@ router.patch(
         { role },
         { new: true }
       ).select("-password");
-      if (role !== undefined && !["staff","manager","customer"].includes(role)) {
+      if (role !== undefined && !["staff","manager","customer", "admin"].includes(role)) {
   return res.status(400).json({ message: "Invalid role" });
 }
 
