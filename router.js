@@ -8,6 +8,7 @@ import { OAuth2Client } from "google-auth-library";
 import User from "./api/models/User.js";
 import connectDB from "./api/_utils/connectDB.js";
 import requireRole from "./api/_utils/requireRole.js";
+import Ticket from "./api/models/Ticket.js";
 // import sendEmail from "./utils/SendEmail.js";
 
 dotenv.config();
@@ -344,4 +345,51 @@ router.patch(
     res.json(user);
   }
 );
+router.post("/tickets/create", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const ticket = await Ticket.create({ title,
+       description,createdBy: req.user.userId,
+       currentRole: req.user.role,
+       status: "open",
+       history:[{
+      action:"Ticket created",
+      role:"customer",
+    },],
+
+   });
+    res.status(201).json(ticket);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+router.get("/tickets/my",authMiddleware,requireRole("customer"),
+async(req,res)=>{
+  try{
+    const tickets=await Ticket.find({createdBy:req.user.userId}).sort({createdAt:-1});
+    res.json(tickets);
+  }
+  catch(err){
+    res.status(500).json({message:"Server error"});
+  }
+})
+router.get("/tickets/staff",authMiddleware,requireRole("staff"),
+async(req,res)=>{
+  const tickets=await Ticket.find({currentRole:"staff"});
+
+  res.json(tickets);
+})
+
+router.get("/tickets/manager",authMiddleware,requireRole("manager"),
+async(req,res)=>{
+  const tickets=await Ticket.find({currentRole:"manager"});
+
+  res.json(tickets);
+})
+router.get("/tickets/admin",authMiddleware,requireRole("admin"),
+async(req,res)=>{
+  const tickets=await Ticket.find({currentRole:"admin"});
+
+  res.json(tickets);
+})  
 export default router;
