@@ -345,19 +345,21 @@ router.patch(
     res.json(user);
   }
 );
-router.post("/tickets/create", async (req, res) => {
+//create tickets 
+router.post("/tickets/create", authMiddleware, requireRole("customer"), async (req, res) => {
   try {
     const { title, description } = req.body;
-    const ticket = await Ticket.create({ title,
-       description,createdBy: req.user.userId,
-       currentRole: req.user.role,
-       status: "open",
-       history:[{
-      action:"Ticket created",
-      role:"customer",
-    },],
-
-   });
+    const ticket = await Ticket.create({ 
+      title,
+      description,
+      createdBy: req.user.userId,
+      currentRole: "staff",
+      status: "Open",
+      history:[{
+        action:"Ticket created",
+        role:"customer",
+      }],
+    });
     res.status(201).json(ticket);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
