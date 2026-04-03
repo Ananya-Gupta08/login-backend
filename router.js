@@ -305,7 +305,7 @@ async(req,res)=>{
   }
 })
 //manager dashboard 
-router.get("/manager/dashobard",authMiddleware,requireRole("manager"),
+router.get("/manager/dashboard",authMiddleware,requireRole("manager"),
 async(req,res)=>{
   try{
     res.json({
@@ -393,5 +393,46 @@ async(req,res)=>{
   const tickets=await Ticket.find({currentRole:"admin"});
 
   res.json(tickets);
-})  
+})
+
+// Handle ticket actions (Open, Close, Escalate, Reject)
+router.put("/tickets/action/:id", authMiddleware, async (req, res) => {
+  try {
+    const { action } = req.body;
+    const ticket = await Ticket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // Add action to history
+    ticket.history.push({
+      action,
+      role: req.user.role,
+    });
+
+    // Update status based on action
+    if (action === "Close" || action === "CLose") {
+      ticket.status = "Closed";
+    } else if (action === "Reject") {
+      ticket.status = "Rejected";
+    } else if (action === "Escalate" || action === "Escalate to Admin") {
+      ticket.status = "In Progress";
+      // Move to next role
+      if (ticket.currentRole === "staff") {
+        ticket.currentRole = "manager";
+      } else if (ticket.currentRole === "manager") {
+        ticket.currentRole = "admin";
+      }
+    } else if (action === "Open") {
+      ticket.status = "Open";
+    }
+
+    await ticket.save();
+    res.json(ticket);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;
