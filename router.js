@@ -20,8 +20,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!mongoose.connection.readyState) {
   mongoose
     .connect(process.env.MONGO_URL)
-    .then(() => console.log("MongoDB connected"))
+    .then(() => console.log(mongoose.connection.name)) 
     .catch(console.error);
+    
 }
 
 // middleware
