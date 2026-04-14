@@ -245,6 +245,26 @@ router.get(
     }
   }
 );
+
+router.get(
+  "/admin/users/:id",
+  authMiddleware,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id).select("-password");
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const tickets = await Ticket.find({ createdBy: req.params.id }).sort({ createdAt: -1 });
+      res.json({ user, tickets });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 // edit users using -patch-
 router.patch(
   "/admin/update-role/:id",
