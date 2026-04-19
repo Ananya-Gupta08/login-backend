@@ -1,5 +1,7 @@
-import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import bcrypt from "bcryptjs";
@@ -9,9 +11,7 @@ import User from "./api/models/User.js";
 import connectDB from "./api/_utils/connectDB.js";
 import requireRole from "./api/_utils/requireRole.js";
 import Ticket from "./api/models/Ticket.js";
-// import sendEmail from "./utils/SendEmail.js";
-
-dotenv.config();
+import sendTicketClosedEmail from "./utils/sendEmail.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -80,6 +80,11 @@ router.post("/login", async (req, res) => {
     return res.status(403).json({
       message: "Your account has been deactivated. Contact admin.",
     });
+  }
+
+  // Check if user is Google auth user
+  if (user.authProvider === "google") {
+    return res.status(400).json({ message: "Please login using Google" });
   }
 
   if (!(await bcrypt.compare(password, user.password))) {
@@ -398,20 +403,20 @@ async(req,res)=>{
 })
 router.get("/tickets/staff",authMiddleware,requireRole("staff"),
 async(req,res)=>{
-  const tickets=await Ticket.find({currentRole:"staff"});
+  const tickets=await Ticket.find({currentRole:"staff"}).populate("createdBy", "name");
 
   res.json(tickets);
 })
 
 router.get("/tickets/manager",authMiddleware,requireRole("manager"),
 async(req,res)=>{
-  const tickets=await Ticket.find({currentRole:"manager"});
+  const tickets=await Ticket.find({currentRole:"manager"}).populate("createdBy", "name");
 
   res.json(tickets);
 })
 router.get("/tickets/admin",authMiddleware,requireRole("admin"),
 async(req,res)=>{
-  const tickets=await Ticket.find({currentRole:"admin"});
+  const tickets=await Ticket.find({currentRole:"admin"}).populate("createdBy", "name");
 
   res.json(tickets);
 })
@@ -420,9 +425,11 @@ async(req,res)=>{
 router.put("/tickets/action/:id", authMiddleware, async (req, res) => {
   try {
     const { action } = req.body;
-    const ticket = await Ticket.findById(req.params.id);
+    console.log("Ticket action request:", { ticketId: req.params.id, action, userRole: req.user.role, userId: req.user.userId });
+    const ticket = await Ticket.findById(req.params.id).populate("createdBy", "email name");
 
     if (!ticket) {
+      console.log("Ticket not found for close action", req.params.id);
       return res.status(404).json({ message: "Ticket not found" });
     }
 
@@ -450,6 +457,21 @@ router.put("/tickets/action/:id", authMiddleware, async (req, res) => {
     }
 
     await ticket.save();
+
+    // Send email if ticket is closed
+    if ((action === "Close" || action === "CLose") && ticket.createdBy?.email) {
+      console.log("Closing ticket and sending confirmation email", { ticketId: ticket._id, to: ticket.createdBy.email });
+      try {
+        await sendTicketClosedEmail(ticket.createdBy.email);
+        console.log("Email sent successfully");
+      } catch (emailErr) {
+        console.error("Email failed", emailErr);
+        // Don't fail the request if email fails
+      }
+    } else if (action === "Close" || action === "CLose") {
+      console.warn("Ticket close action triggered but no creator email found.", { ticketId: ticket._id, createdBy: ticket.createdBy });
+    }
+
     res.json(ticket);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
