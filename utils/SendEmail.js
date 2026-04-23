@@ -1,19 +1,13 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendTicketClosedEmail = async (toEmail) => {
-  const mailOptions = {
-    from: `Support Team <${process.env.EMAIL_USER}>`,
+  const msg = {
     to: toEmail,
+    from: process.env.EMAIL_USER,
     subject: "Your Ticket Has Been Closed",
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
@@ -25,7 +19,7 @@ const sendTicketClosedEmail = async (toEmail) => {
     `,
   };
 
-  const info = await transporter.sendMail(mailOptions);
+  const info = await sgMail.send(msg);
   return info;
 };
 
